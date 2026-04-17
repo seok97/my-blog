@@ -8,13 +8,19 @@ pipeline {
             }
         }
 
+        stage('Prepare Environment') {
+            steps {
+                // .env 파일은 .gitignore에 의해 무시되므로 Jenkins 환경에 없을 수 있습니다.
+                // 보안 또는 외부 주입을 사용하지 않았을 경우를 대비해 .env.example을 복사하여 기본값을 보장합니다.
+                sh 'cp -n .env.example .env || true'
+            }
+        }
+
         stage('Docker Build') {
             steps {
-                // Checkout 이후에 .env 파일이 존재하므로 sh 명령 내에서 동적으로 파싱합니다.
-                // 따옴표를 ''' (싱글쿼트 3개)로 사용하여 Groovy 변수 내삽을 방지하고 쉘 변수 치환으로 위임합니다.
                 sh '''
-                export DOCKER_IMAGE=$(grep '^DOCKER_IMAGE=' .env | cut -d '=' -f2 | tr -d '\\r' || echo 'my-nextjs-blog')
-                docker build -t ${DOCKER_IMAGE}:latest .
+                export DOCKER_IMAGE=$(grep '^DOCKER_IMAGE=' .env | cut -d '=' -f2 | tr -d '\\r')
+                docker build -t ${DOCKER_IMAGE:-my-nextjs-blog}:latest .
                 '''
             }
         }
@@ -22,12 +28,12 @@ pipeline {
         stage('Deploy') {
             steps {
                 sh '''
-                export DOCKER_IMAGE=$(grep '^DOCKER_IMAGE=' .env | cut -d '=' -f2 | tr -d '\\r' || echo 'my-nextjs-blog')
-                export APP_PORT=$(grep '^APP_PORT=' .env | cut -d '=' -f2 | tr -d '\\r' || echo '3000')
+                export DOCKER_IMAGE=$(grep '^DOCKER_IMAGE=' .env | cut -d '=' -f2 | tr -d '\\r')
+                export APP_PORT=$(grep '^APP_PORT=' .env | cut -d '=' -f2 | tr -d '\\r')
                 
-                docker stop ${DOCKER_IMAGE} || true
-                docker rm ${DOCKER_IMAGE} || true
-                docker run -d --name ${DOCKER_IMAGE} --env-file .env -p ${APP_PORT}:3000 ${DOCKER_IMAGE}:latest
+                docker stop ${DOCKER_IMAGE:-my-nextjs-blog} || true
+                docker rm ${DOCKER_IMAGE:-my-nextjs-blog} || true
+                docker run -d --name ${DOCKER_IMAGE:-my-nextjs-blog} --env-file .env -p ${APP_PORT:-3000}:3000 ${DOCKER_IMAGE:-my-nextjs-blog}:latest
                 '''
             }
         }
