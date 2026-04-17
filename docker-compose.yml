@@ -1,6 +1,8 @@
 services:
   nextjs-blog:
-    image: 'nextjs-blog-sample:latest' # 실제 이미지가 없으므로 간단한 정적 페이지용 nginx 이미지로 대체 테스트 가능
+    image: '${DOCKER_IMAGE:-my-nextjs-blog}:latest'
+    env_file:
+      - .env
     restart: unless-stopped
     ports:
-      - '3000:80'
+      - '${APP_PORT:-3000}:3000'
