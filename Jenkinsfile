@@ -27,7 +27,6 @@ pipeline {
                 sh '''
                 docker stop ${DOCKER_IMAGE} || true
                 docker rm ${DOCKER_IMAGE} || true
-                // --env-file 구문을 제거하고 파라미터 포트를 활용해 배포합니다.
                 docker run -d --name ${DOCKER_IMAGE} -p ${APP_PORT}:3000 ${DOCKER_IMAGE}:latest
                 '''
             }
